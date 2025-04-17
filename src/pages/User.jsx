@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import Header from "../components/Header";
 import axios from "axios";
 import Swal from "sweetalert2";
@@ -6,6 +7,9 @@ import withReactContent from "sweetalert2-react-content";
 import { Bounce, toast } from "react-toastify";
 
 function User() {
+  const { id } = useParams();           // يجيب قيمة :id من الرابط
+  const [form, setForm] = useState({ username: "", email: "" });
+
   const MySwal = withReactContent(Swal);
 
   const [users, setUsers] = useState([]);
@@ -43,16 +47,87 @@ function User() {
   };
 
   useEffect(() => {
-    fetchUsers();
-  }, [users]);
+    fetch(`https://fakestoreapi.com/users/${id}`)
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to fetch user");
+        return res.json();
+      })
+      .then(data => {
+        setUser(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message);
+        setLoading(false);
+      });
+  
+      if (users) {
+        setForm({
+          username: users.username,
+          email: users.email,
+        });
+      }
+    }, [id],[users]);
+
+ 
+  if (loading) return <p>Loading..</p>;
+  if (error)   return <p>Error: {error}</p>;
+
+
+  
 
   const handleFrom = (e) => {
     e.preventDefault();
     console.log(userData);
     AddUsers(userData);
   };
+
+  const handleChange = e => {
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = e => {
+    e.preventDefault();
+    fetch(`https://fakestoreapi.com/users/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Update failed");
+        return res.json();
+      })
+      .then(updated => {
+        alert("Update done!");
+        setUsers(updated);
+      })
+      .catch(err => alert("error: " + err.message));
+  };
+
   return (
+    
+    
     <div>
+      <h2>Edit Name#{id}</h2>
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label>name :</label>
+          <input
+            name="username"
+            value={form.username}
+            onChange={handleChange}
+          />
+        </div>
+        <div>
+          <label>Email :</label>
+          <input
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+          />
+        </div>
+        <button type="submit">Save changes</button>
+      </form>
       <Header />
       <div className="container">
         <div className="row">
